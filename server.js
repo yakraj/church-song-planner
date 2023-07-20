@@ -1,16 +1,156 @@
-const express = require('express');
+const express = require("express");
 const app = express();
+const bcrypt = require("bcrypt");
+const uniqid = require("uniqid");
+const saltRounds = 10;
+const myPlaintextPassword = "s0//P4$$w0rD";
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const uri =
+  "mongodb+srv://immanuel:yakraj123@immanuelchurch.vk9ottj.mongodb.net/?retryWrites=true&w=majority";
 
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
 
+client
+  .connect()
+  .then(() => {
+    console.log("Connected to MongoDB!");
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 
-app.get('/', (req, res) => {
-  res.send(`<div class="division34357" style="height: 386px; width: 341px; outline: rgb(255, 207, 207) dashed 0.5px; box-sizing: border-box; border-radius: 20px; justify-content: center; display: flex; align-items: center; flex-direction: column; border: 3px solid rgb(242, 146, 122); box-shadow: grey 0px 0px 10px;"><div class="division72689" style="height: 116px; width: 145px; outline: rgb(255, 207, 207) dashed 0.5px; box-sizing: border-box; border-radius: 15px; background-image: url(&quot;https://img.freepik.com/premium-photo/fantastic-view-kirkjufellsfoss-waterfall-near-kirkjufell-mountain-sunset_761071-868.jpg?w=2000&quot;); border: 5px solid rgb(64, 153, 229);"></div><h1 class="text89985" style="text-transform: capitalize; margin: 0px;">never expect </h1><p class="paragraph48928" style="margin: 0px; text-align: center; padding: 6px;">Completely orchestrate quality imperatives vis-a-vis functionalized opportunities. Globally administrate flexible data without extensive internal or "organic" sources. Monotonectally productize maintainable convergence and cross-unit initiatives. Rapidiously orchestrate go forward testing procedures whereas flexible web services.</p></div>`);
+const db = client.db("immanuel");
+
+app.get("/", (req, res) => {
+  let collection = "users";
+  bcrypt.hash(myPlaintextPassword, saltRounds, function (err, hash) {
+    // Store hash in your password DB.
+    console.log();
+  });
+  db.collection(collection)
+    .find({})
+    .limit(50)
+    .toArray()
+    .then((response) => {
+      res.send(response).status(200);
+    })
+    .catch((err) => res.send(err).status(400));
+});
+
+app.get("/register", (req, res) => {
+  // const { name, phone, password } = req.body
+  let name = "yakraj";
+  let phone = 7709522405;
+  let password = "yakraj@#111000";
+  bcrypt.hash(password, saltRounds, function (err, hash) {
+    if (err) {
+      res.send("something went wrong").status(502);
+    } else {
+      const username = uniqid(name);
+      db.collection("users")
+        .find({ phone: phone })
+        .toArray()
+        .then((response) => {
+          if (!response.length) {
+            db.collection("users")
+              .insertOne({
+                name: name,
+                phone: phone,
+                userid: username,
+                pass: hash,
+              })
+              .then((respo) => {
+                res.send(respo);
+              })
+              .catch((err) => res.send(err).status(400));
+          } else {
+            res.send("mobile number already exists");
+          }
+        })
+        .catch((err) => res.send(err).status(400));
+    }
+  });
+});
+
+app.get("/login", (req, res) => {
+  // const {phone,password}  = req.body;
+  let phone = 7709522405;
+  let password = "yakraj@#111000";
+  db.collection("users")
+    .find({ phone: phone })
+    .toArray()
+    .then((response) => {
+      // here we will compare the password is valid or not
+
+      bcrypt.compare(password, response[0].pass, function (err, result) {
+        console.log(response, result);
+        if (err) {
+          res.send("something went wrong").status(400);
+        } else {
+          if (result) {
+            res.send(response);
+          } else {
+            res.send("wrong crediantials");
+          }
+        }
+      });
+
+      // res.send(response);
+    })
+    .catch((err) => res.send(err).status(400));
+});
+
+app.get("/delete", (req, res) => {
+  db.collection("users")
+    .deleteMany({ name: "yakraj" })
+    .then((response) => res.send(response))
+    .catch((err) => res.send(err).status(400));
+});
+
+app.get("/crete", (req, res) => {
+  db.collection("users")
+    .find({ name: "yakraj" })
+    .toArray()
+    .then((response) => {
+      if (!response.length) {
+        db.collection("users")
+          .insertOne({
+            name: "yakraj",
+            pass: "yakraj123",
+            userid: "yakrajp123",
+          })
+          .then((response) => {
+            res.json(response).status(200);
+          })
+          .catch((err) => res.send(err).status(400));
+      } else {
+        res.send("it already has data");
+      }
+    })
+    .catch((err) => res.send(err).status(400));
+});
+
+app.get("/update", (req, res) => {
+  const filter = { userid: "yakrajp123" };
+  const update = { $set: { name: "james bond" } };
+
+  db.collection("users")
+    .updateOne(filter, update)
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((err) => {
+      res.status(500).send(err);
+    });
 });
 
 const port = 3001;
-
-
-
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
