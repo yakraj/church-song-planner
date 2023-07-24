@@ -29,10 +29,6 @@ const db = client.db("immanuel");
 
 app.get("/", (req, res) => {
   let collection = "users";
-  bcrypt.hash(myPlaintextPassword, saltRounds, function (err, hash) {
-    // Store hash in your password DB.
-    console.log();
-  });
   db.collection(collection)
     .find({})
     .limit(50)
@@ -43,11 +39,8 @@ app.get("/", (req, res) => {
     .catch((err) => res.send(err).status(400));
 });
 
-app.get("/register", (req, res) => {
-  // const { name, phone, password } = req.body
-  let name = "yakraj";
-  let phone = 7709522405;
-  let password = "yakraj@#111000";
+app.post("/register", (req, res) => {
+  const { name, phone, password } = req.body
   bcrypt.hash(password, saltRounds, function (err, hash) {
     if (err) {
       res.send("something went wrong").status(502);
@@ -78,16 +71,14 @@ app.get("/register", (req, res) => {
   });
 });
 
-app.get("/login", (req, res) => {
-  // const {phone,password}  = req.body;
-  let phone = 7709522405;
-  let password = "yakraj@#111000";
+app.post("/login", (req, res) => {
+  const {phone,password}  = req.body;
+
   db.collection("users")
     .find({ phone: phone })
     .toArray()
     .then((response) => {
       // here we will compare the password is valid or not
-
       bcrypt.compare(password, response[0].pass, function (err, result) {
         console.log(response, result);
         if (err) {
